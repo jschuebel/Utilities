@@ -1,0 +1,51 @@
+           public bool ParseStringArray(string[] astr)
+            {
+                
+                    string[] aCols;
+                    foreach (string scols in astr)
+                    {
+                        aCols = scols.Split(new char[] { ':' });
+                        switch (aCols[0])
+                        {
+                            case "RowID":
+                                RowID = aCols[1];
+                                break;
+                            case "FieldName":
+                                FieldName = aCols[1];
+                                DBFieldName = aCols[1]; //Currently DBName is on client GetDBColumnName();
+                                break;
+                            case "Type":
+                                sType = aCols[1];
+                                break;
+                            case "Value":
+                                sValue = aCols[1];
+                                break;
+                            case "ModType":
+                                switch (aCols[1])
+                                {
+                                    case "Modified":
+                                        RowState = RowState.Modified;
+                                        break;
+                                    case "Added":
+                                        RowState = RowState.Added;
+                                        break;
+                                    case "Deleted":
+                                        RowState = RowState.Deleted;
+                                        break;
+                                }
+                                break;
+
+                        }
+                    }
+
+                    Type typ = Type.GetType(sType);
+
+                    if (sType == "System.DateTime" && sValue.Trim() == "")
+                        ;
+                    else
+                        Value = Convert.ChangeType(sValue, typ);
+                    return true;
+                
+            }
+            
+        }

@@ -1,0 +1,9 @@
+       '----------------------------------------------------------------------------
+        ' Parse the string Value separating Capitol letters by a space
+        '----------------------------------------------------------------------------
+        Private Function parsedisplayvalue( _
+            ByVal strVal As String) As String
+
+            Return Regex.Replace(strVal, "([A-Z][a-z0-9]*)", "$1 ").Trim
+
+        End Function

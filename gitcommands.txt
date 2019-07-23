@@ -1,0 +1,291 @@
+git config --global user.name "name"
+git config --global user.email "here@domain.com"
+
+git config --list
+git status
+ 
+//************* IGNORE for visual studio
+
+https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
+ 
+
+//************* CONFIG
+
+git config --global user.name "Jim "
+
+git config --global user.email "name"
+
+git config --list
+
+git config --global alias.unstage 'reset HEAD --'  //create alias 'unstage'
+
+git unstage <filename>
+
+git config --global alias.last 'log -1 HEAD'  //show last log entry
+
+git last
+
+ 
+
+git status
+
+git init
+
+ 
+
+//************* CLONE/REMOTE
+
+git clone <url>     //implicitly adds an ORIGIN remote
+
+git remote  //showing your remote shortnames
+
+git remote -v //show URL also
+
+git remote show origin    //display remote information URL, etc
+
+git remote rename pb dbrepo
+
+git remote add dbrepo https://somedomain/tfs/CPS_Azure/_git/Databases
+
+now you can use
+
+git fetch dbrepo
+
+ 
+
+//************* ADD
+
+If you have deletions, modified files, they will show up here. You will need to add these changes to staging before you can commit them.
+
+You can add them all at once -A or individually -a
+
+git add -a | -A
+
+git add .   all/update all
+
+git add *.c
+
+ 
+
+//************* TAG
+
+git tag -l
+
+git tag <tagname>  //tag the current commit with tagname
+
+git tag -a <tagname> <commitid>  //(only 4 digits of commit id needed)tag a specific commit with a tagname
+
+git tag v1.0 e7bo
+
+ 
+
+//************* REMOVE
+
+git rm filename   //remove files
+
+git rm --cached README  //remove readme file from staged
+
+git rm log/\*.log   //remove all *.log files in the log folder
+
+ 
+
+//************* COMMIT
+
+git commit -m "message"
+
+//*** updating a commit
+
+git commit -m 'initial commit'
+
+git add forgotten_file
+
+git commit --amend
+
+ 
+
+git reflog
+
+git log
+
+git branch -a     --show all branches
+
+ 
+
+//************* RENAME/MOVE
+
+git mv README.me README
+
+ 
+
+ 
+
+//************* CHECKOUT
+
+git checkout develop   //change working  branch
+
+git checkout -- <filename>  //overlay this file with the last commited version
+
+git checkout -b newbranchname develop    //create new branch from develop branch
+
+ 
+
+//************* SHOW
+
+git show --pretty="" --name-only -r  fff4aa   //list out the file names in the commit
+
+The --no-commit-id suppresses the commit ID output.
+
+The --pretty argument specifies an empty format string to avoid the cruft at the beginning.
+
+The --name-only argument shows only the file names that were affected (Thanks Hank).
+
+The -r argument is to recurse into sub-trees
+
+fff4aa the commit ID
+
+git show --stat fff4aa   //list out files with checkin or mods?
+
+ 
+
+//************* DIFF
+
+git diff src/index.html ad58aa
+
+git diff --staged  //--cached(samme thing) show all that are staged for commit
+
+git status
+
+symbols:
+
++Add  ~change -delete
+
+ 
+
+git wipe
+
+ 
+
+//************* RESET
+
+//bring me back to level
+
+git reset --hard origin/develop
+
+git reset HEAD <file>   //unstage a file
+
+ 
+
+//************* PUSH
+
+git push <remote> <branch>  
+
+git push origin master                    //update your master branch to the origin remote
+
+ 
+
+ 
+
+//Get latest from the source branch as you may have accrued conflicts which will need to be resolved before you can merge a pull request.
+
+git merge | pull origin develop
+
+git pull
+
+git pull origin develop       ==> merge from another branch
+
+git push         ==>update your branch with what was pulled
+
+--As you have completed and committed all of your changes to your local repo and you're ready to create a pull request for code review, now
+
+--is the time to rebase against your source branch (origin/dev), squash your commits into a single commit for review.
+
+--To initiate a rebase:
+
+git rebase -i origin/develop
+
+--After you've completed the rebasing, you will need to push your single commit to remote branch. Since you're injecting a new commit, you
+
+--will in some cases need to force this commit (-f) as git won't know what to associate your rebase commit with.
+
+git push -f origin feature-12345679-LoginFlow
+
+--That's it, you've committed now a single commit of all your local commits. This will make your pull request clean and consolidated and your
+
+--code reviewers will have an easier time parsing through your work.
+
+--Important: If you are having difficulty in rebasing, you can abort the rebase and try again. If you are still having problems, ask another team
+
+--member to help you through the process.
+
+git rebase --abort
+
+If you have deletions, modified files, they will show up here. You will need to add these changes to staging before you can commit them.
+You can add them all at once -A or individually -a
+git add -a | -A
+git add .   all/update all 
+
+
+git commit -m "message"
+git reflog
+git log
+git branch -a     --show all branches
+git checkout develop   --change working  branch
+git checkout -b newbranchname develop    --create new branch from develop branch
+git show --pretty="" --name-only -r  fff4aa   #list out the file names in the commit
+	The --no-commit-id suppresses the commit ID output.
+	The --pretty argument specifies an empty format string to avoid the cruft at the beginning.
+	The --name-only argument shows only the file names that were affected (Thanks Hank).
+	The -r argument is to recurse into sub-trees
+	fff4aa the commit ID
+
+git show --stat fff4aa   # list out files with checkin or mods?
+
+git diff src/index.html ad58aa
+
+
+git status
+symbols:
++Add  ~change -delete
+
+
+git wipe
+
+//bring me back to level
+git reset --hard origin/develop
+
+--Get latest from the source branch as you may have accrued conflicts which will need to be resolved before you can merge a pull request.
+
+git merge | pull origin develop
+git pull
+git pull origin develop       ==> merge from another branch
+git push     			 ==>update your branch with what was pulled
+
+--As you have completed and committed all of your changes to your local repo and you're ready to create a pull request for code review, now
+--is the time to rebase against your source branch (origin/dev), squash your commits into a single commit for review.
+--To initiate a rebase:
+git rebase -i origin/develop
+
+--After you've completed the rebasing, you will need to push your single commit to remote branch. Since you're injecting a new commit, you
+--will in some cases need to force this commit (-f) as git won't know what to associate your rebase commit with.
+git push -f origin feature-12345679-LoginFlow
+
+--That's it, you've committed now a single commit of all your local commits. This will make your pull request clean and consolidated and your
+--code reviewers will have an easier time parsing through your work.
+--Important: If you are having difficulty in rebasing, you can abort the rebase and try again. If you are still having problems, ask another team
+--member to help you through the process.
+git rebase --abort
+
+
+Team Explorer; home; Changes
+1) Branch from DEV
+2) stage  - right click on the file.
+3) commit
+4) Home; Sync
+5) Publish
+6) new pull request
+7) 	a) set from feature branch to development;
+	b) set related work item;
+	c) select new pull request
+
+
+Rebase = rewind all your changes; pull current changes, replay your changes.

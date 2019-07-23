@@ -1,0 +1,24 @@
+       Dim cb As Type = eA.objCopybookMA15.GetType()
+        Dim pi As System.Reflection.PropertyInfo = cb.GetProperty(UAName)
+        If Not pi Is Nothing Then
+            'Dim Val As Object = Nothing
+            'Val = mi.GetValue(eA.objCopybookMA15)
+
+            If Not NewValue Is Nothing Then
+                If NewValType.Name <> pi.PropertyType.Name Then
+                    If NewValType.Name = "String" Then
+                        NewValue = ProcessStringDate(NewValue.ToString())
+                    End If
+
+                    'Handle Nullable Dates
+                    If pi.PropertyType.Name.StartsWith("Nullable") And pi.PropertyType.FullName.Contains("DateTime") Then
+                        NewValue = Convert.ChangeType(NewValue, (New DateTime()).GetType())
+                    Else
+                        NewValue = Convert.ChangeType(NewValue, pi.PropertyType)
+                    End If
+                End If
+            End If
+            pi.SetValue(eA.objCopybookMA15, NewValue, Nothing)
+        Else
+            Logging.Logger.Error(eA.eAppGUID + " - FormInstance/FormResponse(ProcessQuestion) Reflected UAName NOT FOUND =" + UAName)
+        End If
