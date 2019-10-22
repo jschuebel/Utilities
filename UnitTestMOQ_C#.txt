@@ -1,0 +1,62 @@
+****************************************************************************************************************************************
+Unit test Examples with MOQ
+****************************************************************************************************************************************
+****************************************************************************************************************************************
+Nuget: Moq   Daniel Cazzulino  v4.8.2
+https://github.com/moq/moq4
+
+
+Examples using mocked object and Setup
+https://www.developerhandbook.com/unit-testing/writing-unit-tests-with-nunit-and-moq/
+
+
+
+	//Must have interface for mocking
+    public interface IStuff
+    {
+        List<Stuff> GetStuff(); 
+        DateTime DateOfStuff { get; set; }
+        string Name { get; set; }
+    }
+
+
+using Moq;
+	//unit test startup function
+       public void init()
+        {
+
+            repo = new Mock<IStuff>();
+       //     repo.Setup(t => t.DateOfStuff).Returns(DateTime.Now);
+            repo.Setup(t => t.GetStuff()).Returns(new List<People>());
+    //        repo.Setup(t => t.GetStuff ()).Returns(new List<Stuff>() { new Stuff() { Name = "tst1", Age = 22 } });
+
+
+
+
+       [TestMethod]
+        public void TestMethod1()
+        {
+		//create local or global for init method
+          // Mock<IStuff> repo = new Mock<IStuff>();
+
+
+            Assert.IsInstanceOfType(repo.Object, typeof(IStuff));
+
+		//example of constructor that requires repo object
+            OtherStuff emp = new OtherStuff(repo.Object);
+
+            var dt = emp.TestMethod("tst");
+            Assert.IsTrue(emp.TestMethod("tst") == "1/1/0001 12:00:00 AM");
+
+            //Change what a property returns 
+            repo.Setup(t => t.DateOfStuff).Returns(DateTime.Now);
+            Assert.IsFalse(emp.TestMethod("tst") == "1/1/0001 12:00:00 AM");
+
+            //Change what is returned from method
+            //repo.Setup(t => t.GetStuff ()).Returns(new List<Stuff>());
+            Assert.IsTrue(emp.GetSomething().Count == 0);
+
+            //GetSomething of OtherStuff, uses repo GetStuff method
+            repo.Setup(t => t.GetStuff()).Returns(new List<Stuff>() { new Stuff() { Name = "tst1", Age = 22 } });
+            Assert.AreEqual(1, emp.GetSomething().Count);
+
