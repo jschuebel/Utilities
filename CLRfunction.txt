@@ -1,0 +1,1 @@
+https://www.red-gate.com/simple-talk/sql/t-sql-programming/clr-assembly-regex-functions-for-sql-server-by-example/

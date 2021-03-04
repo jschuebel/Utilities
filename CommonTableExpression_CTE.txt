@@ -1,0 +1,15 @@
+  --common table expression
+  WITH cte_picklist_names (Name, UserName, FullName) AS (
+    SELECT    
+		wp.Name,
+        u.Name + ' ' + u.[ShortName], 
+		FullName
+    FROM    
+        [TrafficManager].[dbo].[WarehousePickLists] wp
+		INNER JOIN [TrafficManager].[dbo].[Users] u ON u.id = wp.UserID
+)
+
+SELECT
+    Name, UserName, FullName
+FROM 
+    cte_picklist_names

@@ -1,0 +1,75 @@
+    public static class DataTableExtensions
+        {
+        private static Dictionary<Type, IList<PropertyInfo>> typeDictionary = new Dictionary<Type, IList<PropertyInfo>>();
+        public static IList<PropertyInfo> GetPropertiesForType<T>()
+    {
+        var type = typeof(T);
+        if(!typeDictionary.ContainsKey(typeof(T)))
+        {
+            typeDictionary.Add(type, type.GetProperties().ToList());
+        }
+        return typeDictionary[type];
+    }
+
+        public static IList<T> ToList<T>(this DataTable table) where T : new()
+        {
+            IList<PropertyInfo> properties = GetPropertiesForType<T>();
+            IList<T> result = new List<T>();
+
+            foreach (var row in table.Rows)
+            {
+                var item = CreateItemFromRow<T>((DataRow)row, properties);
+                result.Add(item);
+            }
+
+            return result;
+        }
+
+        private static T CreateItemFromRow<T>(DataRow row, IList<PropertyInfo> properties) where T : new()
+        {
+            T item = new T();
+            foreach (var property in properties)
+            {
+                try
+                {
+                    if (row.Table.Columns.Contains(property.Name))
+                    {
+                        object newValue = null;
+                        if (property.PropertyType.Name != row[property.Name].GetType().Name)
+                        {
+                            if (property.PropertyType.Name.StartsWith("Nullable") && property.PropertyType.FullName.Contains("DateTime"))
+                            {
+                                if (row[property.Name].GetType().Name == "String")
+                                { 
+                                    Match match = Regex.Match(row[property.Name].ToString(),@"(?<Year>\d{4})[-\/ ]?(?<Month>\d{1,2})[-\/ ]?(?<Day>\d{1,2})[-\/ ]?(?<Hours>\d{1,2})[-: ]?(?<Minutes>\d{1,2})[-: ]?(?<Seconds>\d{1,2})");
+                                    
+                                    //Check for Date Time string with year first and dash after date  yyyy/mm/dd-hh:mm:ss
+                                    if (match.Groups["Seconds"].Captures.Count>0) //if we have seconds, assume full Date Time string
+                                        row[property.Name] = string.Format("{0}/{1}/{2} {3}:{4}:{5}", match.Groups["Month"].Captures[0].Value, match.Groups["Day"].Captures[0].Value, match.Groups["Year"].Captures[0].Value, match.Groups["Hours"].Captures[0].Value, match.Groups["Minutes"].Captures[0].Value, match.Groups["Seconds"].Captures[0].Value);
+                                }
+                                newValue = Convert.ChangeType(row[property.Name], (new DateTime()).GetType());
+                            }
+                            else
+                                newValue = Convert.ChangeType(row[property.Name], property.PropertyType);
+           
+                        }
+                        else
+                            newValue=row[property.Name];
+                    
+
+
+                        property.SetValue(item, newValue, null);
+                        //property.SetValue(item, row[property.Name], null);
+                    }
+                }
+                catch (System.ArgumentException ae)
+                {
+                    if (!ae.Message.Contains("does not belong to table") && !ae.Message.Contains("Object of type 'System.DBNull"))
+                        throw ae;
+                }
+
+            }
+            return item;
+        }
+
+    }

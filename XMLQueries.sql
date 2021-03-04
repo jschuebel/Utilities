@@ -1,3 +1,32 @@
+WITH XMLNAMESPACES ('http://ACORD.org/Standards/Life/2' as ns1)
+SELECT ParamValues.rw.value('.','varchar(50)') as id
+FROM [eApp] CROSS APPLY [eAppData].nodes('/ns1:TXLife/ns1:TXLifeRequest/ns1:TransRefGUID') as ParamValues(rw)  
+
+
+  WITH XMLNAMESPACES ('http://ACORD.org/Standards/Life/2' as MsBuild)
+SELECT [eAppGUID],[UpdateDateTime],
+	rw.value('(MsBuild:Party[@id=''Primary_Insured'']/MsBuild:Person/MsBuild:FirstName)[1]','varchar(50)') as FirstName,
+	rw.value('(MsBuild:Party[@id=''Primary_Insured'']/MsBuild:Person/MsBuild:LastName)[1]','varchar(50)') as LastName,
+	rw.value('(MsBuild:Party[@id=''Primary_Insured'']/MsBuild:GovtID)[1]','varchar(50)') as GovtIDSSN,
+	rw.value('(MsBuild:Party[@id=''Agent_1'']/MsBuild:Person/MsBuild:LastName)[1]','varchar(50)') as AgentLastName,
+	rw.value('(MsBuild:Party[@id=''Agent_1'']/MsBuild:Producer/MsBuild:CarrierAppointment/MsBuild:CompanyProducerID)[1]','varchar(50)') as CompanyProducerID_AgentID,
+	rw.value('(MsBuild:Party[@id=''Agent_1'']/MsBuild:Producer/MsBuild:CarrierAppointment/MsBuild:OLifEExtension/MsBuild:StateLicID)[1]','varchar(50)') as StateLicID,
+	rw.value('(MsBuild:Party[@id=''Primary_Insured'']/MsBuild:Address[@id=''PI_Address_Residence'']/MsBuild:AddressStateTC)[1]','varchar(5)') as PrimResState,
+	rw.value('(MsBuild:Party[@id=''Primary_Insured'']/MsBuild:Address[@id=''PI_Address_Mailing'']/MsBuild:AddressStateTC)[1]','varchar(5)') as PrimMailState,
+	rw.value('(MsBuild:Holding[@id=''Application_Holding'']/MsBuild:Policy/MsBuild:ApplicationInfo/MsBuild:SignatureInfo/MsBuild:SignatureDate)[1]','varchar(50)') as SignatureDate,
+	rw.value('(MsBuild:Holding[@id=''Application_Holding'']/MsBuild:Policy/MsBuild:PaymentMethod)[1]','varchar(50)') as PaymentMethod,
+	rw.value('(MsBuild:Holding[@id=''Application_Holding'']/MsBuild:Policy/MsBuild:ProductCode)[1]','varchar(50)') as ProductCode,
+	rw.value('(MsBuild:Holding[@id=''Banking_Holding'']/MsBuild:Banking/MsBuild:RoutingNum)[1]','varchar(50)') as RoutingNum
+FROM (
+	select XI.[eAppGUID],XI.[UpdateDateTime], XI.xm
+	FROM (
+		SELECT [eAppGUID], [UpdateDateTime], CAST([eAppData] as XML) xm
+		FROM [eApp]
+	) AS XI
+) AS XO  CROSS APPLY XO.xm.nodes('//MsBuild:TXLife/MsBuild:TXLifeRequest/MsBuild:OLifE') as ParamValues(rw)  
+order by [UpdateDateTime] desc
+
+
 SELECT *
 FROM [ExceptionLog]
 WHERE ErrorMessageXML.exist('Error/FranchiseID[.=500]')=1

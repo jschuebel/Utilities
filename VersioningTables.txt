@@ -1,0 +1,94 @@
+--ALTER TABLE [dbo].employee SET ( SYSTEM_VERSIONING = OFF )
+
+
+--ALTER TABLE base.Application ADD
+--   SysStartTime datetime2 GENERATED ALWAYS AS ROW START NOT NULL
+--  ,SysEndTime datetime2 GENERATED ALWAYS AS ROW END NOT NULL
+
+
+--ALTER TABLE bas.Application ADD
+---- PERIOD FOR SYSTEM_TIME (SysStartTime,SysEndTime)
+
+--   ALTER TABLE [dbo].[CompanyLocation]  SET (   SYSTEM_VERSIONING = ON  ( HISTORY_TABLE = [dbo].[CompanyLocationHistory])  );
+
+
+
+WITH cte
+
+AS
+
+(      SELECT
+
+              *fieldsneeded*
+
+          UpdatedOn,
+
+             
+
+              *fieldsToBeLagged*
+
+      
+
+          LAG(*fieldsToBeLagged*) OVER(PARTITION BY ApplicationID ORDER BY SysEndTime) AS prev_fieldsToBeLagged,
+
+       FROM *table1*
+
+ 
+
+)
+
+ 
+
+--select * from cte
+
+ 
+
+SELECT ID, UpdatedOn ,
+
+              ca.field_name AS [FieldName],
+
+              IIF (cte.prev_UpdatedOn IS NULL,'[N/A]', ca.prev_value) AS [PreviousValue],  -- use N/A for previous values of first record.
+
+              ca.curr_value AS [NewValue]
+
+FROM cte
+
+--Any IDs to resolve
+
+LEFT OUTER JOIN table2 ph1 ON ph1.ID=cte.ID
+
+LEFT OUTER JOIN table2 prev_ph1 ON prev_ph1.ID=cte.prev_ID
+
+ 
+
+CROSS APPLY
+
+(
+
+       VALUES
+
+       ('ColumnName', CONVERT(VARCHAR(4000), ph1.field),CONVERT(VARCHAR(4000), prev_ph1.field))
+
+ 
+
+) ca(field_name, curr_value, prev_value)
+
+ 
+
+WHERE EXISTS(SELECT ca.curr_value EXCEPT SELECT ca.prev_value)       --Show only field value differences. (based on string representation)
+
+   AND prev_UpdatedOn IS NOT null                                                 --Change to OR and IS NULL to Force all values for first record to be shown.
+
+ 
+
+ORDER BY cte.UpdatedOn desc, ca.field_name
+
+--Offset is required inorder to allow order by
+
+OFFSET 0 ROWS;
+
+ 
+
+ 
+
+GO
