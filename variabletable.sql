@@ -1,3 +1,5 @@
+--Declare @Heartbeat Table (Id bigint INDEX IX1 CLUSTERED, HeartbeatTypeId tinyint, IsManual bit, HeartRate smallint, StatusId tinyint, Processed bit INDEX IX2 NONCLUSTERED Default(0)  )
+
 declare @agntno varchar(10), @Lvl int, @checkCnt int
 select @agntno='88733', @Lvl=0
 

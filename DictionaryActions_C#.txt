@@ -1,0 +1,7 @@
+       public Dictionary<string, Action<string>> EntityResponseFields { get; set; } = new Dictionary<string, Action<string>>();
+        EntityResponseFields["pageIndex"] = (string Val) => { pageIndex = int.Parse(Val); };
+
+        public void SetProp(string qryName, string Val)
+        {
+            EntityResponseFields[qryName](Val);
+        }

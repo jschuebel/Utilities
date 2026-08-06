@@ -1,0 +1,7 @@
+select *
+,CONVERT(datetime, 
+               SWITCHOFFSET(CONVERT(datetimeoffset, 
+                                    CreatedOn), 
+                            DATENAME(TzOffset, SYSDATETIMEOFFSET()))) 
+,DATEADD(mi, DATEDIFF(mi, GETUTCDATE(), GETDATE()), CreatedOn) 
+from ct.Spreadsheet order by CreatedOn desc

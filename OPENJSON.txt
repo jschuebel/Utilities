@@ -1,0 +1,61 @@
+DECLARE @json NVARCHAR(MAX);
+
+SET @json = N'{"id": 2,"hello": "here"}]';
+
+SELECT * FROM OPENJSON(@json) order by [key]
+
+ 
+
+DECLARE @json NVARCHAR(MAX);
+
+SET @json = N'[{"id": 2 },{"id": 5}]';
+
+ 
+
+SELECT * FROM OPENJSON(@json)
+
+  WITH (    id INT 'strict $.id'  );
+
+ 
+
+DECLARE @json VARCHAR(MAX) = '{"parm1ID":"2","ArrayVals":["echo1","echo2"],"Anotherparm":true,"yetanotherparm":"hellothere","nullparm":null}';
+
+SELECT * --, string_agg(cls.value,',')
+
+FROM OPENJSON(@json)
+
+WITH (
+
+ parm1ID int,
+
+ArrayVals nvarchar(max) as JSON ) parnt
+
+ 
+
+DECLARE @json VARCHAR(MAX) = '{"parm1ID":"2","subjson":{"echo1":1,"echo2":"helloagain" },"Anotherparm":true,"yetanotherparm":"hellothere","nullparm":null}';
+
+SELECT * --subjson.*
+
+FROM OPENJSON(@json)
+
+WITH (
+
+       parm1ID int,
+
+       subjson nvarchar(max) as JSON
+
+ ) parnt
+
+CROSS APPLY OPENJSON(parnt.subjson, '$' )
+
+WITH (
+
+       echo1 int,
+
+       echo2 varchar(max)
+
+) subjson
+
+--CROSS APPLY == inner join
+
+--OUTER APPLY

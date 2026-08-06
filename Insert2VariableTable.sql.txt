@@ -1,0 +1,82 @@
+--Pivot data rows to columns
+/*
+CREATE TYPE [dbo].[Ttable] AS TABLE(
+	[ID] [int] NOT NULL,
+	[Code] [varchar](6) NOT NULL,
+	[data] [varchar](max) NOT NULL,
+	[CreatedOn] [datetime2](7) NOT NULL,
+	PRIMARY KEY NONCLUSTERED 
+(
+	[ID] ASC
+)WITH (IGNORE_DUP_KEY = OFF)
+)
+*/
+
+		Declare @BillTypes Table(BillType varchar(max) COLLATE Latin1_General_BIN2, processed bit)
+		Declare @BillTypeGrps Table(BillType varchar(max) COLLATE Latin1_General_BIN2, BillTypeArea varchar(max))
+		DECLARE @ACBills Table (ID int, PaymentType varchar(max), Assistance varchar(64), DocID varchar(max),Amount decimal(19,2), AccountNumber varchar(max))
+		DECLARE @updatedAppDepot as [dbo].[Ttable]
+
+		INSERT INTO @updatedAppDepot
+		SELECT
+			ID, 
+			Code, 
+			[data], 
+			CreatedOn, 
+		FROM (
+			SELECT
+				ad.ID, 
+				ad.Code, 
+				ad.[data], 
+				ad.CreatedOn, 
+				--Get EARLIEST Record
+				ROW_NUMBER() OVER (PARTITION BY JSON_VALUE(data,'$.AppID') ORDER BY ad.CreatedOn) AS Rank
+			FROM db.schema.table ad
+			WHERE ad.ID=123
+		) t
+		ORDER BY t.CreatedOn DESC 
+
+	
+			--Gather the Unique list of BillTypes
+			insert into @BillTypes(BillType)
+			SELECT distinct replace(iapp.[key],'Assistance','') BillType
+			FROM @updatedAppDepot
+				CROSS APPLY OPENJSON(Application, '$' ) iapp
+			where iapp.[key] like '%Assistance'
+
+			insert into @BillTypeGrps
+			select * from (
+			select BillType,BillType+'Assistance' typ from @BillTypes
+				union all select BillType,BillType+'DocID' from @BillTypes
+				union all select BillType,BillType+'Amount' from @BillTypes
+				union all select BillType,BillType+'AccountNumber' from @BillTypes
+			) dat order by BillType
+
+
+			declare @dynqry varchar(max)=''
+			declare @dynwher varchar(max)=''
+			declare @billtype varchar(max) = (select top 1 BillType from @BillTypes)
+
+			--Iterate the billtypes and pull the specifc columns 
+			while @billtype is not null
+			BEGIN
+
+				select @dynqry=STRING_AGG('json_value(Application,''$.'+BillTypeArea+''') '+BillTypeArea,',') from @BillTypeGrps where BillType=@billtype 
+				select @dynwher='json_value(Application,''$.'+@billtype+'Assistance'')=''true'''
+
+				--	select @dynwher dynwher
+
+				declare @qry nvarchar(max) = 'SELECT app.[ID],'''+@billtype+''','+ @dynqry + ' FROM @table app where Code=''XX''  and ' + @dynwher
+--				select @qry qr
+				insert into @ACBills EXEC sp_executesql  @stmt = @qry, @params = N'@table as [dbo].[Ttable] READONLY', @table = @updatedAppDepot
+
+				update @BillTypes
+				set processed=1
+				where BillType=@billtype
+	
+				set @billtype=null
+				select top 1 @billtype=BillType from @BillTypes where processed is null
+			END
+
+
+select * from @ACBills

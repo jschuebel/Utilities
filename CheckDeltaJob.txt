@@ -1,0 +1,337 @@
+--************************************************************************************************************************
+
+Create SQL Job example
+
+--************************************************************************************************************************
+
+STEP setting EXECUTE [base].[***SPNAME***]
+
+ 
+
+BEGIN TRANSACTION
+
+DECLARE @ReturnCode INT
+
+SELECT @ReturnCode = 0
+
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 4/4/2022 8:59:00 AM ******/
+
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'[Uncategorized (Local)]' AND category_class=1)
+
+BEGIN
+
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N'JOB', @type=N'LOCAL', @name=N'[Uncategorized (Local)]'
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+ 
+
+END
+
+ 
+
+DECLARE @jobId BINARY(16)
+
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'***JOB NAME***',
+
+              @enabled=1,
+
+              @notify_level_eventlog=0,
+
+              @notify_level_email=0,
+
+              @notify_level_netsend=0,
+
+              @notify_level_page=0,
+
+              @delete_level=0,
+
+              @description=N'No description available.',
+
+              @category_name=N'[Uncategorized (Local)]',
+
+              @owner_login_name=N'***AD Path\AD User***', @job_id = @jobId OUTPUT
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'***STEP NAME***',
+
+              @step_id=6,
+
+              @cmdexec_success_code=0,
+
+              @on_success_action=1,
+
+              @on_success_step_id=0,
+
+              @on_fail_action=2,
+
+              @on_fail_step_id=0,
+
+              @retry_attempts=0,
+
+              @retry_interval=0,
+
+              @os_run_priority=0, @subsystem=N'TSQL',
+
+              @command=N'EXECUTE [base].[***Stored Proc Name***]',
+
+              @database_name=N'***DB NAME***',
+
+              @flags=0
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N'Every 5 Min',
+
+              @enabled=1,
+
+              @freq_type=4,
+
+              @freq_interval=1,
+
+              @freq_subday_type=4,
+
+              @freq_subday_interval=5,
+
+              @freq_relative_interval=0,
+
+              @freq_recurrence_factor=0,
+
+              @active_start_date=20210614,
+
+              @active_end_date=99991231,
+
+              @active_start_time=0,
+
+              @active_end_time=235959,
+
+              @schedule_uid=N'***GUID***'
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N'(local)'
+
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+COMMIT TRANSACTION
+
+GOTO EndSave
+
+QuitWithRollback:
+
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+
+EndSave:
+
+GO
+
+ 
+
+--************************************************************************************************************************
+
+Table to store time for job
+
+--************************************************************************************************************************
+
+ 
+
+ 
+
+ 
+
+CREATE TABLE [base].[JobSetting](
+
+       [JobSettingID] [int] IDENTITY(1,1) NOT NULL,
+
+       [Code] [varchar](20) NOT NULL,
+
+       [Description] [varchar](255) NULL,
+
+       [DateValue] [datetime2](7) NULL,
+
+       [StringValue] [varchar](max) NULL,
+
+       [IsActive] [bit] NOT NULL,
+
+CONSTRAINT [PK_JobSetting] PRIMARY KEY CLUSTERED
+
+(
+
+       [JobSettingID] ASC
+
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+
+ 
+
+ 
+
+ 
+
+ALTER PROCEDURE [base].[CheckDeltas]
+
+As
+
+BEGIN
+
+ 
+
+       --Kept for test dump only output 0=do no update/inserts
+
+       DECLARE @runUpdates bit=1
+
+       DECLARE @LatestSysStartTime dateTime2(7)
+
+       --Add 1 millisecond to avoid the previous latest record to be processed again
+
+       SELECT @LatestSysStartTime=DateAdd(ms,1,[DateValue]) FROM [base].[JobSetting] bs WHERE CODE='MaxStart' AND [IsActive]=1
+
+ 
+
+       declare @toDate varchar(38),@frmDate varchar(38) = CONVERT(VARCHAR(38), @LatestSysStartTime, 121)
+
+       --Gather date w/o time to append end of day time
+
+       set @toDate = TRIM(substring(@frmDate,0,charindex(' ', @frmDate)))
+
+       set @toDate = @toDate + ' 23:59:59.9999999'
+
+       if @runUpdates=0
+
+              select @frmDate fromDate, @toDate toDate
+
+ 
+
+ 
+
+       declare @Parent TABLE (
+
+              [DependentKeyID] [int] NOT NULL,
+
+              [FirstName] [varchar](50) NOT NULL,
+
+              [LastName] [varchar](50) NOT NULL,
+
+              [ExistRecs] int NULL,
+
+              [Deleted] bit NULL
+
+              )
+
+       ;
+
+      
+
+Create CTE
+
+ 
+
+ 
+
+       insert into @Parent
+
+       select  *, [ExistRecs],[Deleted] from (
+
+              select *
+
+                     ,ROW_NUMBER() OVER (PARTITION BY ID ORDER BY SysStartTime DESC) AS rev
+
+                     --Flag records that exist
+
+                     ,(select count(*) FROM) ExistRecs
+
+                     --Flag records that exist in CurrentTable, but not in ParentTable
+
+                     ,(CASE WHEN (select count(*) FROM [Parent] per (nolock) WHERE per.ID=cte.ID)=0 THEN 1 ELSE 0 END) Deleted
+
+              from CTE cte
+
+       ) as xDat WHERE xDat.rev=1
+
+ 
+
+       if @runUpdates=0
+
+              select * from @Parent
+
+ 
+
+       if @runUpdates=1
+
+       BEGIN
+
+              --Updated Rows  -- Ranked because you can have multiple during the time period, so take the latest (rev=1)
+
+              UPDATE per
+
+              SET per.
+
+              FROM [LookUp] per
+
+              inner join @Parent pp on pp.ID=per.ID AND [ExistRecs]>0 AND [Deleted]=0
+
+ 
+
+              --Insert New Rows
+
+              INSERT INTO [LookUp] ()
+
+              select
+
+              FROM @Parent WHERE [ExistRecs]=0 AND [Deleted]=0
+
+ 
+
+              --Remove Deleted Rows
+
+              DELETE FROM LookUp WHERE ID in (
+
+                     SELECT LookUp
+
+                     WHERE [ID] NOT IN
+
+                           (SELECT [ID] FROM Parent (nolock)))
+
+       END
+
+       --Update the setting for the next LookUp update
+
+       --Never go backwards, i.e. latest record was removed. (it would show in history still)
+
+       DECLARE @LookUpLatest dateTime2(7), @ParentLatest dateTime2(7)
+
+       SELECT @LookUpLatest=[DateValue] FROM [base].[JobSetting] bs WHERE CODE='MaxStart' AND [IsActive]=1
+
+       SELECT @ParentLatest=MAX(SysStartTime) FROM [Parent]
+
+       if (@LookUpLatest < @ParentLatest)
+
+       BEGIN
+
+              if @runUpdates=1
+
+              BEGIN
+
+                     UPDATE bs
+
+                           SET [DateValue]=(select MAX(SysStartTime) FROM [Parent])
+
+                     FROM [base].[JobSetting] bs
+
+                     WHERE CODE='MaxStart' AND [IsActive]=1
+
+              END
+
+       END
+
+ 
+
+END

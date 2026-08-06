@@ -1,0 +1,139 @@
+﻿
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Data.OleDb;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Security.Cryptography;
+
+//using System.Data.SqlClient;
+using System.Security.Permissions;
+using System.ServiceModel;
+//using System.Text.Json;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using static ConsoleApp1.Program;
+using static System.Collections.Specialized.BitVector32;
+using static System.Net.Mime.MediaTypeNames;
+
+namespace ConsoleApp1
+{
+    class Program
+    {
+
+        public static string getConnectionString()
+        {
+            return "Server=server;Database=db;Integrated Security=SSPI";
+        }
+
+        /*
+         ALTER DATABASE AdventureWorks SET ENABLE_BROKER;
+
+        CREATE QUEUE ContactChangeMessages;
+
+CREATE SERVICE ContactChangeNotifications
+  ON QUEUE ContactChangeMessages
+([http://schemas.microsoft.com/SQL/Notifications/PostQueryNotification]);
+
+
+
+         */
+        public static DataTable getDataWithSqlDependency()
+        {
+
+            using (var connection = new SqlConnection(getConnectionString()))
+            using (var cmd = new SqlCommand("SELECT [TaskID],[Title],[Description],[CreatedOn],[UpdatedOn],[UpdatedBy] FROM [JS2].[aWF].[Task];", connection))
+            {
+
+                var dt = new DataTable();
+
+                // Create dependency for this command and add event handler
+                var dependency = new SqlDependency(cmd);
+                dependency.OnChange += new OnChangeEventHandler(onDependencyChange);
+
+                // execute command to get data
+                connection.Open();
+                dt.Load(cmd.ExecuteReader(CommandBehavior.CloseConnection));
+
+                return dt;
+
+            }
+
+        }
+
+        // Handler method
+        public static void onDependencyChange(object sender,
+           SqlNotificationEventArgs e)
+        {
+
+            Console.WriteLine($"OnChange Event fired. SqlNotificationEventArgs: Info={e.Info}, Source={e.Source}, Type={e.Type}.");
+
+            if ((e.Info != SqlNotificationInfo.Invalid)
+                && (e.Type != SqlNotificationType.Subscribe))
+            {
+                (sender as SqlDependency).OnChange -= new OnChangeEventHandler(onDependencyChange);
+                //resubscribe
+                var dt = getDataWithSqlDependency();
+
+                Console.WriteLine($"=======>>>ONCHANGE Data changed. {dt.Rows.Count} rows returned.");
+            }
+            else
+            {
+                Console.WriteLine($"!!!!ERROR!!!!   ONCHANGE Invalid or SubScribe Data changed.");
+                //(sender as SqlDependency).OnChange -= new OnChangeEventHandler(onDependencyChange);
+                //var dt = getDataWithSqlDependency();
+                //Console.WriteLine($"ONCHANGE Invalid or SubScribe Data changed. {dt.Rows.Count} rows returned.");
+            }
+
+        }
+
+        private static bool CanRequestNotifications()
+        {
+            SqlClientPermission permission =
+                new SqlClientPermission(
+                PermissionState.Unrestricted);
+            try
+            {
+                permission.Demand();
+                return true;
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
+        }
+
+
+
+        static void Main(string[] args)
+        {
+            // Create a dependency connection.
+            SqlDependency.Start(getConnectionString(),"sqlqueueName");
+
+
+            var dt = getDataWithSqlDependency();
+            Console.WriteLine("END App!");
+            Console.ReadKey();
+
+            // Release the dependency.
+            SqlDependency.Stop(getConnectionString(), "sqlqueueName");
+
+            return;
+        }
+
+    }
+}

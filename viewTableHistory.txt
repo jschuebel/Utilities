@@ -1,0 +1,81 @@
+ALTER VIEW [dbo].[viewGeneralHistory]
+AS
+
+WITH cte
+AS
+(
+SELECT [id]
+	,[Name]
+      ,[Work]
+	  ,[AddressID]
+      ,[createdate]
+      ,[SysStartTime] UpdatedOn
+      ,[SysEndTime],
+
+      LAG(SysStartTime) OVER(PARTITION BY ID ORDER BY SysEndTime) AS prev_UpdatedOn,
+      LAG([AddressID]) OVER(PARTITION BY ID ORDER BY SysEndTime) AS prev_AddressID,
+      LAG(Name) OVER(PARTITION BY ID ORDER BY SysEndTime) AS prev_Name,
+--      LAG(Name) OVER(PARTITION BY NameTableID ORDER BY SysEndTime) AS prev_Name,
+      LAG(Work) OVER(PARTITION BY ID ORDER BY SysEndTime) AS prev_Work
+  FROM (
+	  SELECT [id]
+		  ,[Name]
+		  ,[Home Phone]
+		  ,[Work]
+		  ,[Pager]
+		  ,[Fax]
+		  ,[Mobile]
+		  ,[E-Mail]
+		  ,[Address ID] AddressID
+		  ,[BirthdayAlert]
+		  ,[createdate]
+		  ,[SysStartTime]
+		  ,[SysEndTime]
+	  FROM [Personal].[dbo].[General]
+	  union all
+	  SELECT [id]
+		  ,[Name]
+		  ,[Home Phone]
+		  ,[Work]
+		  ,[Pager]
+		  ,[Fax]
+		  ,[Mobile]
+		  ,[E-Mail]
+		  ,[Address ID] AddressID
+		  ,[BirthdayAlert]
+		  ,[createdate]
+		  ,[SysStartTime]
+		  ,[SysEndTime]
+	 FROM [Personal].[dbo].[GeneralHistory]
+	 ) as XDAT
+)
+
+--select * from cte
+
+SELECT
+       ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS ID,
+       cte.id PersonID,
+       cte.UpdatedOn,
+       ca.field_name AS [FieldName],
+       IIF (cte.prev_UpdatedOn IS NULL,'[N/A]', ca.prev_value) AS [PreviousValue],  -- use N/A for previous values of first record.
+       ca.curr_value AS [NewValue]--,
+       --cte.UpdatedBy
+FROM cte
+LEFT OUTER JOIN [Personal].[dbo].[Addresses] ad ON ad.id=cte.AddressID
+LEFT OUTER JOIN [Personal].[dbo].[Addresses] prev_ad ON prev_ad.id=cte.prev_AddressID
+CROSS APPLY
+(
+       VALUES
+       ('Name', CONVERT(VARCHAR(4000), cte.Name),CONVERT(VARCHAR(4000), cte.prev_Name)),
+       ('Address', CONVERT(VARCHAR(4000), ad.Address),CONVERT(VARCHAR(4000), prev_ad.Address)),
+       ('City', CONVERT(VARCHAR(4000), ad.City),CONVERT(VARCHAR(4000), prev_ad.City)),
+       ('State', CONVERT(VARCHAR(4000), ad.State),CONVERT(VARCHAR(4000), prev_ad.State)),
+       ('Zip', CONVERT(VARCHAR(4000), ad.Zip),CONVERT(VARCHAR(4000), prev_ad.Zip)),
+       ('work', CONVERT(VARCHAR(4000), cte.Work),CONVERT(VARCHAR(4000), cte.prev_Work))
+) ca(field_name, curr_value, prev_value)
+
+WHERE EXISTS(SELECT ca.curr_value EXCEPT SELECT ca.prev_value)       --Show only field value differences. (based on string representation)
+   AND prev_UpdatedOn IS NOT NULL                                                 --Change to OR and IS NULL to Force all values for first record to be shown.
+
+   
+

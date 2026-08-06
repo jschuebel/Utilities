@@ -1,0 +1,17 @@
+Example execute SP/query to produce XML
+
+   @Query varchar(MAX) = null,
+
+    @xmlData xml = null OUTPUT
+
+ 
+
+       DECLARE @stringVar NVARCHAR(max)
+
+       SET @stringVar = N'DECLARE @RESULTS XML; SET @RESULTS = (' + @Query + '); SELECT @xmlData=@RESULTS'; 
+
+       EXEC dbo.sp_executesql @stringVar,
+
+                       N'@xmlData xml OUTPUT',
+
+                       @xmlData OUTPUT;

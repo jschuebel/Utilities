@@ -1,0 +1,65 @@
+C# side:
+
+ 
+
+                var sqlparams = new List<object>();
+
+                sqlparams.Add(new SqlParameter("@P1", P1ID));
+
+                sqlparams.Add(new SqlParameter("@P2", P2ID));
+
+ 
+
+                //Create the OUTPUT param to hold the response JSON
+
+                var outParam = new SqlParameter();
+
+                outParam.ParameterName = "@POut";
+
+                outParam.SqlDbType = SqlDbType.NVarChar;//DataType Of OutPut Parameter
+
+                outParam.Size = 8000;
+
+                 outParam.Direction = ParameterDirection.Output;
+
+                sqlparams.Add(outParam);
+
+ 
+
+                //Output the results in a JSON array of RESPONSE Model list(List<X>) as I found no method of returning a non-entity resultset
+
+                await _dbContext.Database.ExecuteSqlRawAsync("EXEC [schema].[storedproc] @P1,@P2, @POut OUTPUT", sqlparams);
+
+                RESPONSE Model list(List<X>) records = JsonSerializer.Deserialize< RESPONSE Model list(List<X>)>(outParam.Value.ToString());
+
+ 
+
+SQL side:
+
+ 
+
+--**   declare @myData nvarchar(max);
+
+--**   EXECUTE [schema].[storedproc] 556,853, @myData OUTPUT
+
+--**   select @myData ddd
+
+CREATE PROCEDURE [schema].[storedproc]
+
+(@P1 int, @ P2 int,@jsonData nvarchar(max) = null OUTPUT)
+
+ 
+
+ 
+
+              SET @jsonData = (
+
+                     select * from @table 
+
+                     FOR JSON PATH,ROOT('objectname') –{“objectname”:[{…},{..}]
+
+              );
+
+ 
+
+ 

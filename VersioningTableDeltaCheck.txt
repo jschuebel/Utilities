@@ -1,0 +1,81 @@
+DECLARE @LatesttableSysStartTime dateTime2(7)
+
+       --Add 1 millisecond to avoid the previous latest record to be processed again
+
+       SELECT @LatesttableSysStartTime=DateAdd(ms,1,[DateValue]) FROM [base].[Setting] bs WHERE CODE='desiredcode'
+
+ 
+
+       declare @toDate varchar(38),@frmDate varchar(38) = CONVERT(VARCHAR(38), @LatesttableSysStartTime, 121)
+
+       --Gather date w/o time to append end of day time
+
+       set @toDate = TRIM(substring(@frmDate,0,charindex(' ', @frmDate)))
+
+       set @toDate = @toDate + ' 23:59:59.9999999'
+
+       select @frmDate fromDate, @toDate toDate
+
+ 
+
+ 
+
+       declare @ParentTable TABLE (
+
+              [TableID] [int] NOT NULL,
+
+              [DOB] [date] NULL,
+
+              [FirstName] [varchar](50) NOT NULL,
+
+              [LastName] [varchar](50) NOT NULL,
+
+              [ExistRecs] int NULL,
+
+              [Deleted] bit NULL
+
+              )
+
+       ;
+
+       WITH tableCTE AS (        
+
+              SELECT [tableID],[DOB],[FirstName],[LastName],SysStartTime
+
+              FROM [table]
+
+              FOR SYSTEM_TIME FROM @frmDate TO @toDate
+
+              WHERE SysEndTime<>'9999-12-31 23:59:59.9999999'
+
+              union
+
+              SELECT [tableID],[DOB],[FirstName],[LastName],SysStartTime
+
+              FROM [table] (nolock)
+
+              WHERE SysEndTime='9999-12-31 23:59:59.9999999'
+
+                     AND SysStartTime >= @frmDate
+
+                )
+
+       insert into @ParentTable –-Table used to determine updates,inserts, deletes
+
+       select [tableID],[DOB],[FirstName],[LastName],[ExistRecs],[Deleted] from (
+
+              select *
+
+                     ,ROW_NUMBER() OVER (PARTITION BY tableID ORDER BY SysStartTime DESC) AS rev
+
+                     --Flag records that exist in both Parent and LookUp tables
+
+                     ,(select count(*) FROM LookUp plu (nolock) WHERE plu.tableID=cte. tableID) ExistRecs
+
+                     --Flag records that exist in LookUp, but not in Parent
+
+                     ,(CASE WHEN (select count(*) FROM table per (nolock) WHERE per.tableID=cte. tableID)=0 THEN 1 ELSE 0 END) Deleted
+
+              from tableCTE cte
+
+       ) as xDat WHERE xDat.rev=1

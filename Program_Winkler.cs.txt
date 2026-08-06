@@ -1,0 +1,179 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections;
+using System.Data;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+
+//using System.Data.SqlClient;
+//using System.Text.Json;
+
+namespace ConsoleApp1
+{
+    public class matchVND
+    {
+        public long ID { get; set; }
+        public string Name { get; set; }
+        public double jerores { get; set; }
+
+        public override string ToString()
+        {
+            return $"ID({ID}) Name({Name}) jerores({jerores:F6})";
+        }
+    }
+    class Program
+    {
+        //static ConcurrentQueue<string> concurrentQueue = new ConcurrentQueue<string>();
+
+        static void Main(string[] args)
+        {
+
+            object consoleLock = new object(); // The synchronization object
+            List<matchVND> matchps = new List<matchVND>();
+
+            var sbnotfound = new System.Text.StringBuilder();
+            using (SqlConnection con = new SqlConnection("Server=;Database=;user id=;password="))
+            {
+                con.Open();
+                var dtTable1 = new DataTable();
+                var dtTable2 = new DataTable();
+
+                using (var sqlCommRd = con.CreateCommand())
+                {
+                    sqlCommRd.CommandType = CommandType.Text;
+                    sqlCommRd.CommandText = "select Name from table ";
+                    dtTable1.Load(sqlCommRd.ExecuteReader());
+                }
+
+                using (var sqlCommRd = con.CreateCommand())
+                {
+                    sqlCommRd.CommandType = CommandType.Text;
+                    sqlCommRd.CommandText = "select Name from othertable";
+                    dtTable2.Load(sqlCommRd.ExecuteReader());
+                }
+
+                
+                Console.WriteLine($"==>table1.Rows Count({dtTable1.Rows.Count})");
+
+                if (dtTable1.Rows.Count > 0 && dtTable2.Rows.Count > 0)
+                {
+                    Stopwatch stopwatch = new Stopwatch();
+
+                    // Start timing
+                    stopwatch.Start();
+
+                    Decimal DueAmount = (Decimal)0.0;
+                    int index = 0;
+                    int exactmatchCount = 0;
+                    int nomatchCount = 0;
+                    double lres = .15;
+                    var tName1 = "";
+                    var tName2= "";
+                    var ResultID = 0;
+                    var Name1 = "";
+                    var Name2 = "";
+
+                    //Parallel.ForEach(dtTable1.AsEnumerable(), (rw1,state) =>
+                    foreach (DataRow rw1 in dtTable1.Rows)
+                    {
+                        tName1 = "";
+                        tName2 = "";
+                        ResultID = 0;
+                        Name1 = "";
+                        Name2 = "";
+                        lres = .15;
+                        index++;
+
+                        if (!rw1.IsNull("Name"))
+                        {
+                            tName1 = rw1["Name"].ToString();
+                            tName1 = Regex.Replace(tName1, @"\bCORP\b|\bCOOPERATIVE\b|\bCO-OP\b|\bCO\b|\bCOMPANY\b|\bASSOCIATION\b|\bASSN\b|\bLLC\b|\bLLP\b|\bTHE\b|\bINC\b|\bLIMITED LIABILITY COMPANY\b|\bLIMITED LIABILITY PARTNERSHIP\b|\bOF\b|&", string.Empty);
+                            Name1 = Regex.Replace(tName1.Trim(), @"\s+", " ");
+
+                        }
+
+                        foreach (DataRow rw2 in dtTable2.Rows)
+                        {
+                            Name2 = "";
+
+                            if (!rw2.IsNull("Name"))
+                            {
+                                tName2 = rw2["Name"].ToString();
+                                tName2 = Regex.Replace(tName2, @"\bCORP\b|\bCOOPERATIVE\b|\bCO-OP\b|\bCO\b|\bCOMPANY\b|\bASSOCIATION\b|\bASSN\b|\bLLC\b|\bLLP\b|\bTHE\b|\bINC\b|\bLIMITED LIABILITY COMPANY\b|\bLIMITED LIABILITY PARTNERSHIP\b|\bOF\b|&", string.Empty);
+                                Name2 = Regex.Replace(tName2.Trim(), @"\s+", " ");
+                            }
+
+                            double res;
+                            matchVND nmtch = null;
+                            lock (consoleLock)
+                            {
+
+                                res = JaroWinklerDistance.distance(Name1, Name2);
+
+                                if (res < lres)
+                                {
+                                    lres = res;
+
+                                    nmtch = new matchVND() { ID = (long)rw2["ID"], Name = rw2["Name"].ToString(), jerores = res };
+                                    matchps.Add(nmtch);
+                                }
+                            }
+
+                            if (res == 0.00)
+                            {
+                                exactmatchCount++;
+                                break;
+                            }
+                            //if (res < .15)
+                            //{
+                            //    Interlocked.Increment(ref matchCount);
+                            //}
+
+                        }
+                        //});
+                        if (matchps.Count == 0)
+                        {
+                            nomatchCount++;
+                        }
+                        matchps.Clear();
+                    }
+                    // Stop timing
+                    stopwatch.Stop();
+
+                    // Get the elapsed time as a TimeSpan value
+                    TimeSpan ts = stopwatch.Elapsed;
+
+                    // Format and display the TimeSpan value
+                    string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                        ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+                    Console.WriteLine("RunTime " + elapsedTime);
+                    Console.WriteLine($"Total Exact matches found: {nomatchCount}");
+                    Console.WriteLine($"Total Non matches found: {nomatchCount}");
+
+                    //foreach (var mp in matchps.Keys) {
+                    //    Console.WriteLine("=========>"+mp + " : ");
+                    //    Console.WriteLine(matchps[mp].OrderBy(x => x.jerores).FirstOrDefault().ToString());
+                    //}
+
+                    //while (!concurrentQueue.IsEmpty)
+                    //{
+                    //    if (concurrentQueue.TryDequeue(out string item))
+                    //    {
+                    //        Console.WriteLine($"Dequeued {item}");
+                    //    }
+                    //}
+
+                }
+            }
+
+                        Console.WriteLine("END App!");
+                        Console.ReadKey();
+        }
+
+    }
+}

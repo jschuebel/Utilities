@@ -1,0 +1,30 @@
+select * FROM sys.fulltext_catalogs
+go
+sp_help_fulltext_columns '[base].vView'
+
+
+select distinct
+    object_name(fic.[object_id]) table_name,
+    [name] column_name
+from
+    sys.fulltext_index_columns fic
+    inner join sys.columns c
+        on c.[object_id] = fic.[object_id]
+        and c.[column_id] = fic.[column_id]
+
+
+SELECT table_name
+FROM information_schema.views
+
+select * from [base].vView vo
+where contains(vo.*,'carter and comp')
+
+where contains(vo.*,'NEAR(carter, co)')
+
+contains(vo.*,'company')
+
+sp_help_fulltext_columns '[base].vView'
+SELECT *
+  FROM [base].vView vo
+  inner join FREETEXTTABLE([base].vView,*,'carter co') as fts on fts.[KEY]=vo.ID
+ where fts.RANK > 99

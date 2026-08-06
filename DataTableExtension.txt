@@ -1,4 +1,7 @@
-    public static class DataTableExtensions
+using System.Reflection;
+using System.Text.RegularExpressions;
+
+public static class DataTableExtensions
         {
         private static Dictionary<Type, IList<PropertyInfo>> typeDictionary = new Dictionary<Type, IList<PropertyInfo>>();
         public static IList<PropertyInfo> GetPropertiesForType<T>()
@@ -47,7 +50,8 @@
                                     if (match.Groups["Seconds"].Captures.Count>0) //if we have seconds, assume full Date Time string
                                         row[property.Name] = string.Format("{0}/{1}/{2} {3}:{4}:{5}", match.Groups["Month"].Captures[0].Value, match.Groups["Day"].Captures[0].Value, match.Groups["Year"].Captures[0].Value, match.Groups["Hours"].Captures[0].Value, match.Groups["Minutes"].Captures[0].Value, match.Groups["Seconds"].Captures[0].Value);
                                 }
-                                newValue = Convert.ChangeType(row[property.Name], (new DateTime()).GetType());
+								if (row[property.Name].GetType().Name != "DBNull")
+									newValue = Convert.ChangeType(row[property.Name], (new DateTime()).GetType());
                             }
                             else
                                 newValue = Convert.ChangeType(row[property.Name], property.PropertyType);

@@ -1,0 +1,17 @@
+EXECUTE SP '2100,2859'
+
+ 
+
+   ,@JobIDs varchar(max)
+
+ 
+
+ 
+
+SET @JobIDsCLOSED='[' + @JobIDs + ']'
+
+       SELECT @ID,JobID
+
+       FROM OPENJSON( @JobIDsCLOSED, '$' )
+
+       WITH ([JobID] int '$')

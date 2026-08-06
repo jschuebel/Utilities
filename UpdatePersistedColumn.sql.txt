@@ -1,0 +1,11 @@
+--Disable Full Text search on table; required to modify an indexed column
+ALTER FULLTEXT INDEX ON [dbo].[table] DISABLE
+ALTER FULLTEXT INDEX ON [dbo].[table] DROP (PersistedColumn)
+
+--Drop and modify choctoogle adding literal dash between date and text
+ALTER TABLE [dbo].[table]  DROP COLUMN [PersistedColumn];
+ALTER TABLE [dbo].[table] ADD [PersistedColumn] AS  (CONVERT([nvarchar](4000),upper((((((case when [FirstName] IS NOT NULL then ltrim(rtrim([FirstName]))+' ' else '' end+case when [LastName] IS NOT NULL then ltrim(rtrim([LastName]))+' ' else '' end)+case when [MiddleName] IS NOT NULL then ltrim(rtrim([MiddleName]))+' ' else '' end)+case when [MarriedName] IS NOT NULL then ltrim(rtrim([MarriedName]))+' ' else '' end)+' _ '+case when [DateOfBirth] IS NOT NULL then CONVERT([nvarchar](10),[DateOfBirth],(101))+' ' else '' end)+case when [SSN] IS NOT NULL then [SSN]+' ' else '' end)+case when [EnrollmentId] IS NOT NULL then ltrim(rtrim([EnrollmentId]))+' ' else '' end),(0))) PERSISTED
+
+--Re-enable Full Text Search on table
+ALTER FULLTEXT INDEX ON [dbo].[table] add (PersistedColumn) 
+ALTER FULLTEXT INDEX ON [dbo].[table] enable

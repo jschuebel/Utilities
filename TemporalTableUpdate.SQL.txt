@@ -1,0 +1,25 @@
+USE DB
+GO
+
+SET XACT_ABORT ON;  
+GO
+
+/* 
+DESCRIPTION: description
+AUTHOR: bla
+DATE: 07/20/23
+*/
+
+
+--Turn off versioning to stop these updates from being recorded
+ALTER TABLE [base].[table] SET ( SYSTEM_VERSIONING = OFF)
+GO
+
+
+ALTER here...
+
+
+--Turn versioning back on
+ALTER TABLE [base].[table] SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [History].[table]));
+GO
+

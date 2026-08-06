@@ -6,8 +6,9 @@ cls
 #intercept authentication
 #Get-ChildItem -recurse "D:\SSS1\work\Samples\ang2\*.ts" | Where-Object { $_ | Select-String -Pattern "interceptors" }
 #Get-ChildItem -recurse "D:\SSS1\work\Samples\ang15\*.js" | Where-Object { $_ | Select-String -Pattern "interceptors" }
-Get-ChildItem -recurse "D:\SSS1\work\Samples\NODEJS\*.js" | Where-Object { $_ | Select-String -Pattern "interceptors" }
+#Get-ChildItem -recurse "D:\SSS1\work\Samples\NODEJS\*.js" | Where-Object { $_ | Select-String -Pattern "interceptors" }
 #Get-ChildItem -recurse "D:\SSS1\work\Samples\React\*.js" | Where-Object { $_ | Select-String -Pattern "localStorage" }
+Get-ChildItem -recurse "D:\SSS1\work\Samples\*.cs" | Where-Object { $_ | Select-String -Pattern "factory" }
 
 
 #Get-ChildItem -recurse "D:\SSS1\work\Samples\ang2\*.html" | Where-Object { $_ | Select-String -Pattern "sessionStorage" }

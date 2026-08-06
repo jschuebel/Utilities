@@ -1,0 +1,81 @@
+--cm.[key], cm.[value]
+
+select ROW_NUMBER() OVER(ORDER BY cm.value) AS Row#, cm.value
+
+FROM STRING_SPLIT(@App, ',') cm
+
+WHERE CHARINDEX('ID',cm.value)>0
+
+ 
+
+AND ([value] LIKE '%[A-Za-z]%')
+
+ 
+
+--Insert/Update JSON value
+
+SET @outjson=JSON_MODIFY(@outjson, '$.ID', @rnd )
+
+--Remove JSON attribute
+
+SET @outjson=JSON_MODIFY(@outjson, '$.ID',null )
+
+ 
+
+Select iapp.*, tb.*
+
+FROM base.Application AS app
+
+       CROSS APPLY OPENJSON( app.Application, '$' )
+
+                     WITH ( SomeID int '$.SomeID'
+
+                                  ) iapp
+
+       LEFT JOIN [OtherTable] tb on tb. SomeID=iapp. SomeID
+
+ 
+
+ 
+
+DECLARE @json nvarchar(max)
+
+SET @json = N'{
+
+    "RequestId": "1",
+
+    "ActionRecs": [
+
+        {"Type": "Submit", "Employee": "Joe"},
+
+        {"Type": "Review", "Employee": "Betty"},
+
+        {"Type": "Approve", "Employee": "Sam"},
+
+        {"Type": "Approve", "Employee": "Bill"}
+
+    ]
+
+}'
+
+ 
+
+SELECT i.Id, a.[Type], a.[Employee]
+
+FROM OPENJSON(@json) WITH (
+
+   Id varchar(5) '$.RequestId',
+
+   ActionRecs nvarchar(max) '$.ActionRecs' AS JSON
+
+) AS i
+
+CROSS APPLY OPENJSON(i.ActionRecs) WITH (
+
+   [Type] nvarchar(max) '$.Type',
+
+   [Employee] nvarchar(max) '$.Employee'
+
+) a
+
+ 

@@ -1,0 +1,75 @@
+/*
+
+       declare @myData xml;
+
+       EXECUTE Get???Data 1,'2', @myData OUTPUT
+
+       select @myData ddd
+
+*/
+
+ALTER PROCEDURE [dbo].[Get???eData]
+
+    @ID int,
+
+    @Params varchar(MAX) = null,
+
+    @xmlData xml = null OUTPUT
+
+As
+
+BEGIN
+
+ 
+
+       -- SET NOCOUNT ON added to prevent extra result sets from
+
+       -- interfering with SELECT statements.
+
+       SET NOCOUNT ON;
+
+ 
+
+       declare @Query varchar(MAX)
+
+       SELECT @Query=[Query] FROM Table where ID=@ID
+
+       select @Query=REPLACE(@Query,'@p1',@Params)
+
+ 
+
+ 
+
+       DECLARE @stringVar NVARCHAR(max)
+
+       SET @stringVar = N'DECLARE @RESULTS XML; SET @RESULTS = (' + @Query + '); SELECT @xmlData=@RESULTS'; 
+
+       EXEC dbo.sp_executesql @stringVar,
+
+                       N'@xmlData xml OUTPUT',
+
+                       @xmlData OUTPUT;
+
+ 
+
+ 
+
+Here is how to call it:
+
+            //, params object[] parameters
+
+            try
+
+            {
+
+                var outParam = new SqlParameter();
+
+                outParam.ParameterName = "@POut";
+
+                outParam.SqlDbType = SqlDbType.Xml;//DataType Of OutPut Parameter
+
+                outParam.Direction = ParameterDirection.Output;
+
+                await _db.Database.ExecuteSqlCommandAsync("EXEC Get???Data @P1,@P2, @POut OUTPUT", new SqlParameter("@P1", 1), new SqlParameter("@P2", "2"), outParam);
+
+                return outParam.Value.ToString();

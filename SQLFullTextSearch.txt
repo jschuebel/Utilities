@@ -1,0 +1,136 @@
+Full Text Search Setup
+
+Install FTS on the DB server
+CREATE FULLTEXT CATALOG ChahtaAchakvliPersonLookUpCat; 
+       GO
+
+--select * FROM sys.fulltext_catalogs
+
+Create the index
+CREATE FULLTEXT INDEX ON [base]. LookUp
+
+(  
+
+  FirstName
+
+     Language 1033, 
+
+  LastName
+
+     Language 1033, 
+
+)  
+
+KEY INDEX PK_LookUp ON LookUpCat
+
+WITH CHANGE_TRACKING AUTO            --Population type; 
+
+GO 
+
+ 
+
+--select columnproperty(OBJECT_ID('[base].LookUp'), 'FirstName', 'IsFullTextIndexed')
+
+--list the columns participating in ft
+
+--sp_help_fulltext_columns '[base].LookUp'
+
+ 
+
+--  AND contains(LookUp.*,'NEAR(literalfirstname, literallastname)')
+
+--  AND contains(LookUp.*,'NEAR((literalfirstname, literallastname),2)')  --near within 2 words
+
+--  AND contains(LookUp.*,'literalfirstname AND Summit')
+
+-- where contains(*,'"literalPartialfirstname*" AND literallastname') – firstname starts with and lastname
+
+ 
+
+  inner join CONTAINSTABLE(LookUp,*,' literalfirstname AND literallastname ') as fts on fts.[KEY]=plu. ID
+
+  where FREETEXT (*,' literalfirstname literallastname ')
+  
+  **************************************************************  OLDER FULL Text INSTALL
+
+
+--Check to see if full text is enabled
+declare @FTEnabled bit
+select @FTEnabled=DataBaseProperty('test', 'IsFulltextEnabled')
+--1=enabled 0=not enabled, so enable
+if @FTEnabled=0
+	sp_fulltext_database 'enabled'
+
+/*
+Create the full text catalog in the default directory
+If we must supply a path  default:C:\Program Files\Microsoft SQL Server\MSSQL.1\MSSQL\FTData
+sp_fulltext_catalog [ @ftcat= ] 'fulltext_catalog_name' , 
+     [ @action= ] 'action' 
+     [ , [ @path= ] 'root_directory' ] 
+
+*/
+
+sp_fulltext_catalog '??LOBname??', 'create', 'c:\temp\business'
+
+
+/*Register tables for full text processing
+sp_fulltext_table 
+   [ @tabname= ] 'qualified_table_name'         
+      , [ @action= ] 'action' 
+   [ 
+      , [ @ftcat= ] 'fulltext_catalog_name'         
+      , [ @keyname= ] 'unique_index_name' 
+   ]
+*/
+
+sp_fulltext_table 'tablename', 'create', '??LOBname??', 'PK'
+
+
+/*Register tables for full text processing
+sp_fulltext_column [ @tabname= ] 'qualified_table_name' , 
+     [ @colname= ] 'column_name' , 
+     [ @action= ] 'action' 
+     [ , [ @language= ] 'language_term' ] 
+     [ , [ @type_colname= ] 'type_column_name' ]
+*/
+sp_fulltext_column 'tablename', 'Title', 'add'
+sp_fulltext_column 'tablename', 'Description', 'add'
+
+
+-- Activate the ft for the tables
+sp_fulltext_table 'tablename', 'activate'
+
+
+/*start ft population
+start_full:
+Starts a full population for fulltext_catalog_name. Every row of every table associated with this 
+full-text catalog is retrieved for full-text indexing even if they have already been indexed
+
+start_incremental :
+Starts an incremental population for fulltext_catalog_name. An error is displayed if the catalog does 
+not exist. If a full-text index population is already active, a warning is displayed but no population 
+action occurs. With incremental population only changed rows are retrieved for full-text indexing, 
+provided there is a timestamp column present in the table being full-text indexed
+*/
+sp_fulltext_catalog '??LOBname??', 'start_full'
+
+
+--Verify the progress of the population
+-- 0 = process is idle i.e. finished population; 1=status of population
+select FulltextCatalogProperty('??LOBname??', 'PopulateStatus')
+
+
+
+/**************************  finished install ********************/
+/**************************  finished install ********************/
+/**************************  finished install ********************/
+/**************************  finished install ********************/
+
+--utility methods
+
+--check f for errors 1=part of index
+select columnproperty(OBJECT_ID('tablename'), 'title', 'IsFullTextIndexed')
+select columnproperty(OBJECT_ID('tablename'), 'description', 'IsFullTextIndexed')
+
+--list the columns participating in ft
+sp_help_fulltext_columns 'tablename'

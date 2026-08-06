@@ -1,0 +1,97 @@
+--query compatible all DBs
+
+SELECT name, compatibility_level FROM sys.databases;
+
+ 
+
+ 
+
+DBSET<DTO> dtos
+
+public IQueryable<DTO> Get()
+
+                var SearchVal = new SqlParameter()
+
+                {
+
+                    ParameterName = "@SearchVal",
+
+                    SqlDbType = System.Data.SqlDbType.VarChar,
+
+                    Size = 8000,
+
+                    Direction = System.Data.ParameterDirection.Input,
+
+                    Value = searchfld
+
+                };
+
+               return this._dbContext.vTable.FromSqlRaw($"exec dbo.SP @SearchVal", SearchVal).ToListAsync().Result.AsQueryable();
+
+ 
+
+ 
+
+        public async Task<ActionResult<IEnumerable<DTO>>> FuncName(string id)
+
+                var recs = await _dbContext.Set<DTO>()
+
+                    .FromSqlRaw("EXEC dbo.SP @id", new SqlParameter("@tribalnamesid", tribalnamesid) )
+
+                    .ToListAsync();
+
+ 
+
+ 
+
+--******* query by table view
+
+    [Table("vView", Schema = "dbo")]
+
+    public class vView
+
+    {
+
+        [Key]
+
+        public int ID { get; set; }
+
+ 
+
+          var vViewRecords = ctxt.Set<vView>().FromSqlRaw($"select ID,val1 FROM [dbo].[vView] where ID={ pId}");
+
+          var vViewRes = vViewRecords?.FirstOrDefault();
+
+ 
+
+--******* query scalar value with EF from sql function
+
+    [Keyless]
+
+    public class ScalarIntResult
+
+    {
+
+        public int Value { get; set; }
+
+    }
+
+ 
+
+ALTER FUNCTION [dbo].[sqlfunction] (@pID int,@secprm bit=0) RETURNS int
+
+                declare @res int=0
+
+                return @res
+
+     var vIds = contextAchvli.Set<ScalarIntResult>().FromSqlRaw($"select [dbo].[sqlfunction] ('{pId }', {secprm}) AS Value");
+
+     var resId = vIds?.FirstOrDefault()?.Value;
+
+ 
+
+--******* query scalar value with EF from sql stored procedure
+
+                    var ress = contextAchvli.Set<ScalarIntResult>().FromSqlRaw($"[dbo].[SP] '{intvar}'").AsEnumerable();
+
+                    var resID = ress?.FirstOrDefault()?.Value;

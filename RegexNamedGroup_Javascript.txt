@@ -1,0 +1,26 @@
+let inputStrings = [ "XLA01 20112345.0000", "REM01 *RAD,0241", "REM02 AGM 4241" ];
+           inputStrings.forEach(str =>
+            {
+                                                                //console.log(str);
+                let mtch = str.match(/(?<FIELD>[A-Z]{3})(?<INDEX>[0-9]{2})\s+(?<DATA>.*)/);
+                                                                //console.log('mtch',mtch);
+                                                                //console.log('mtch.FIELD',mtch.groups.FIELD);
+                if (mtch != null && mtch.length >= 4)
+                {
+                    let FIELDcpy = mtch.groups.FIELD;
+                    let INDEXcpy = mtch.groups.INDEX;
+                    let DATAcpy = mtch.groups.DATA;
+                                                                                console.log('FIELD',FIELDcpy,'INDEX',INDEXcpy,'DATA',DATAcpy);
+                    switch (FIELDcpy)
+                    {
+                        case "REM":
+                            let mtch2 = DATAcpy.match(/\*RAD,(?<RADIUS>[0-9]*)/);
+                            if (mtch2 != null && mtch2.length >= 2)
+                            {
+                                let RADIUScpy = mtch2.groups.RADIUS;
+                                                                                                                                console.log('RADIUS',RADIUScpy);
+                            }
+                            break;
+                    }
+                }
+            });

@@ -1,0 +1,10 @@
+            ,(CASE WHEN (
+
+                                                (MONTH(Birth_date) < MONTH(getdate()))
+
+                                                OR
+
+                                                (MONTH(Birth_date) = MONTH(getdate()) AND DAY(Birth_date) > DAY(getdate()))) THEN ((DATEDIFF(MONTH,Birth_date,getdate()) -1)/12)
+
+                                                ELSE (DATEDIFF(MONTH,Birth_date,getdate())/12) END) calcDate
+

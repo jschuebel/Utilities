@@ -1,0 +1,45 @@
+--*** Once off, treat design as 2 diffenent tables, then turn back on
+ALTER TABLE [dbo].[table] SET ( SYSTEM_VERSIONING = OFF  )
+GO
+
+	BEGIN TRY
+	BEGIN TRAN
+		truncate table [dbo].[table]
+		truncate table [history].[table]
+
+--		DBCC CHECKIDENT ('[db].[dbo].[table]', RESEED, 0);
+		SET IDENTITY_INSERT [db].[dbo].[table] ON
+
+		INSERT INTO [dbo].[table]
+				   ([TypeID]
+					,[Type]
+				   ,[Code]
+		SELECT [TypeID]
+			  ,[Type]
+			  ,[Code]
+		  FROM [db].[schema].[table2]
+
+		SET IDENTITY_INSERT [db].[schema].[table] OFF
+
+		PRINT 'Committing'
+		COMMIT
+
+	END TRY
+	BEGIN CATCH
+		SELECT 
+			ERROR_NUMBER() AS ErrorNumber,
+			ERROR_STATE() AS ErrorState,
+			ERROR_SEVERITY() AS ErrorSeverity,
+			ERROR_PROCEDURE() AS ErrorProcedure,
+			ERROR_LINE() AS ErrorLine,
+			ERROR_MESSAGE() AS ErrorMessage; 
+
+		PRINT 'Rolling back'
+		ROLLBACK
+	END CATCH
+
+
+
+--********* Turn ON versioning
+ALTER TABLE [dbo].[table] SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = History.table));
+Go

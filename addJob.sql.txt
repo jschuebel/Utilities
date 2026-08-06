@@ -1,0 +1,26 @@
+USE msdb;
+GO
+
+EXECUTE dbo.sp_add_job @job_name = N'NightlyNotifications';
+GO
+
+EXECUTE msdb.dbo.sp_add_jobschedule
+    @job_name = N'NightlyNotifications', -- Job name
+    @name = N'Nightly_12AM', -- Schedule name
+    @freq_type = 4, -- Daily
+    @freq_interval = 1, -- Every Day
+    @active_start_time = 00000; -- 12:00 AM
+GO
+EXECUTE sp_add_jobstep
+    @job_name = N'XX NightlyNotifications',
+    @step_name = N'Event Notifications',
+    @subsystem = N'TSQL',
+    @command = N'EXEC XX.SP',
+    @retry_attempts = 5,
+    @retry_interval = 5,
+	@database_name ='DBNAME',
+	@on_success_action=3,  --3 go to next step, 1 default;quit 
+	@on_fail_action=3;  --3 go to next step, 2 default;quit 
+GO
+
+--@proxy_name = N'YourProxyName';  -- Specifies the 'Run as' account
